@@ -1,0 +1,122 @@
+/* Main */
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+
+        height: 100%;
+    }
+    .card {
+        background-color: #3c3c3cf3;
+        box-shadow: 0 0px 3vh rgba(0, 0, 0, 0.5);
+        border-radius: 1vh;
+
+        width: 50vh;
+        height: 100%;
+        margin: 2vh 0;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+
+        padding: 2vh;
+        z-index: 5;
+        transition: box-shadow 0.1s ease-in-out;
+    }
+
+
+/* My user display */
+    .card p{
+        font-size: 2vh;
+
+        margin: 0;
+        margin-bottom: 1vh;
+    }
+
+
+/* Table */
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        color: white;
+        background-color: #0000005c;
+    }
+    .th {
+        text-align: left;
+        padding: 1vh;
+        border-bottom: 2px solid #555;
+        border-right: 1px solid #555;
+        font-weight: bold;
+        font-size: 2vh;
+    }
+    .th:last-child {
+        border-right: none;
+    }
+    .td {
+        padding: 1vh;
+        border-bottom: 1px solid #555;
+        border-right: 1px solid #555;
+        font-size: 2vh;
+    }
+    .td:last-child {
+        border-right: none;
+    }
+    .statusOnline {
+        color: #4ade80;
+    }
+    .statusOffline {
+        color: #f87171;
+    }
+
+
+    .controlButton {
+        background-color: #1b6d00;
+        color: white;
+        border-radius: 0.5vh;
+        cursor: pointer;
+        font-size: 2vh;
+        padding: 0vh 1vh;
+        text-align: center;;
+
+        transition: background-color 0.2s;
+        transition: border-color 0.2s;
+    }
+    .controlButton:hover {
+        background-color: #145300;
+    }
+
+/* Shocker status */
+.userRunning {
+    background-color: rgba(0, 255, 0, 0.5);
+    animation: pulse 0.5s infinite;
+}
+.userStopped {
+    background-color: rgba(0, 255, 0, 0.5);
+    animation: fadeOut 10s ease-out forwards;
+}
+
+@keyframes pulse {
+    0% {
+        background-color: rgba(0, 255, 0, 0.5);
+    }
+    50% {
+        background-color: rgba(0, 255, 0, 0.35);
+    }
+    100% {
+        background-color: rgba(0, 255, 0, 0.5);
+    }
+}
+
+@keyframes fadeOut {
+    0% {
+        background-color: rgba(0, 255, 0, 0.1);
+    }
+    50% {
+        background-color: rgba(0, 255, 0, 0.08);
+    }
+    100% {
+        background-color: transparent;
+    }
+}

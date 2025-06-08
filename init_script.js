@@ -22,11 +22,11 @@ function extractTunnelUrl(data) {
 // Function to update the frontend environment
 function updateFrontendEnv(websocketUrl) {
     const envPath = path.resolve(FRONTEND_DIR, '.env');
-    const envContent = `VITE_WEBSOCKET_URL=${websocketUrl.replace('https://', 'wss://')}\n`;
+    const envContent = `VITE_WEBSOCKET_URL=${websocketUrl}\n`;
     
     try {
         fs.writeFileSync(envPath, envContent);
-        console.log(`  - Updated frontend .env with: ${websocketUrl.replace('https://', 'wss://')}`);
+        console.log(`  - Updated frontend .env with: ${websocketUrl}`);
     } catch (error) {
         console.error('  - Failed to update .env file:', error);
     }
@@ -38,14 +38,6 @@ function startReactServer() {
     reactProcess = spawn('npm', ['run', 'dev'], {
         cwd: path.resolve(FRONTEND_DIR),
         stdio: 'ignore',
-    });
-
-    reactProcess.on('spawn', () => {
-        console.log('\nServers started successfully!');
-        console.log('Stop by pressing Ctrl+C');
-        console.log('Send this url to users to access the device:');
-        console.log(`  - Frontend: ${frontendTunnelUrl}`);
-        console.log("\n\n");
     });
 
     reactProcess.on('close', (code) => {
@@ -88,7 +80,6 @@ function startFrontendTunnel() {
     frontendTunnel.stdout.on('data', (data) => {
         const url = extractTunnelUrl(data);
         if (url) {
-            console.log(`  - Frontend available at: ${url}`);
             frontendTunnelUrl = url;
         }
     });
@@ -96,8 +87,12 @@ function startFrontendTunnel() {
     frontendTunnel.stderr.on('data', (data) => {
         const url = extractTunnelUrl(data);
         if (url) {
-            console.log(`  - Frontend available at: ${url}`);
             frontendTunnelUrl = url;
+            console.log('\nServers started successfully!');
+            console.log('Stop by pressing Ctrl+C');
+            console.log('Send this url to users to access the device:');
+            console.log(`  - Frontend available at: ${url}`);
+            console.log('\n');
         }
     });
 

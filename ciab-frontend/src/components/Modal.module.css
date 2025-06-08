@@ -1,0 +1,111 @@
+/* Main */
+    .modalOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    .modalCard {
+        background-color: #3c3c3c;
+        border-radius: 1vh;
+        box-shadow: 0 0px 3vh rgba(0, 0, 0, 0.5);
+        padding: 2vh;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+
+        width: 50vh;
+        max-height: 80vh;
+
+        animation: modalAppear 0.3s ease-out;
+    }
+    @keyframes modalAppear {
+        from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-10vh);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+/* Text */
+    .modalCard h1 {
+        margin: 0;
+        font-size: 3vh;
+    }
+    .modalCard p {
+        margin: 1vh 0;
+        font-size: 2vh;
+    }
+
+/* Styles */
+    .claimMasterStyle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Set role buttons */
+        .setRoleContainer {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+        }
+        .setRoleContainer p {
+            margin: 0;
+            font-size: 2vh;
+        }
+        .setRoleContainer button {
+            margin-left: 1vh;
+            padding: 0vh 1vh;
+            font-size: 1.8vh;
+        }
+
+    /* Set nickname buttons */
+        .setNicknameContainer {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+        }
+        .setNicknameContainer button {
+            margin-left: 1vh;
+            padding: 0vh 1vh;
+            font-size: 1.8vh;
+        }
+        .setNicknameContainer input {
+            flex-grow: 1;;
+            padding: 0vh 1vh;
+            font-size: 2vh;
+            border-radius: 0.5vh;
+            border: none;
+            background-color: #121212;
+        }
+
+/* Buttons */
+    .claimMasterRoleButton {
+        width: 70%;
+        background-color: #4caf50;
+        border-radius: 1vh;
+        margin-bottom: 2vh;
+
+        transition: background-color 0.3s ease;
+    }
+    .claimMasterRoleButton:hover {
+        background-color: #246427;
+    }
+
