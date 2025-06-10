@@ -190,7 +190,7 @@ function App() {
                     </div>
 
                     <div className={styles.controlPanel}>
-                        <ControlPanel mcuStatus={mcuStatus} sendMcuCommand={sendMcuCommand} changeBackground={changeBackground} isWebSocketConnected={isWebSocketConnected}/>
+                        <ControlPanel mcuStatus={mcuStatus} sendMcuCommand={sendMcuCommand} changeBackground={changeBackground} isWebSocketConnected={isWebSocketConnected} myUser={myUser}/>
                     </div>
 
                     <div className={styles.usersPanel}>

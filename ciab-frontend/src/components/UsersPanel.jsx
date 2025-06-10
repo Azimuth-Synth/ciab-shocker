@@ -39,6 +39,13 @@ function UsersPanel({ users = [], myUser, setIsModalOpen, userCommands = { start
         setIsModalOpen(userIp);
     };
 
+    // Sort users to show online users first
+    const sortedUsers = [...users].sort((a, b) => {
+        if (a.status === 'online' && b.status !== 'online') return -1;
+        if (b.status === 'online' && a.status !== 'online') return 1;
+        return 0; // Keep original order for users with same status
+    });
+
     return (
         <>
             <div className={styles.container}>
@@ -57,14 +64,14 @@ function UsersPanel({ users = [], myUser, setIsModalOpen, userCommands = { start
                         </thead>
 
                         <tbody>
-                            {users.length === 0 ? (
+                            {sortedUsers.length === 0 ? (
                                 <tr>
                                     <td colSpan="5" className={styles.td} style={{ textAlign: 'center' }}>
                                         No users connected
                                     </td>
                                 </tr>
                             ) : (
-                                users.map((user) => {
+                                sortedUsers.map((user) => {
                                     const commandStatus = getUserCommandStatus(user.ip);
                                     return (
                                         <tr key={user.ip} className={

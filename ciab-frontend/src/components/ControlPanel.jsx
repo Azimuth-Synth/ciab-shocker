@@ -2,7 +2,7 @@ import styles from './ControlPanel.module.css';
 
 import { useState } from 'react';
 
-function ControlPanel({ mcuStatus, sendMcuCommand, changeBackground, isWebSocketConnected }) {
+function ControlPanel({ mcuStatus, sendMcuCommand, changeBackground, isWebSocketConnected, myUser }) {
     const [reconnectStatus, setReconnectStatus] = useState(''); // '', 'success', 'error'
 
 
@@ -88,7 +88,10 @@ function ControlPanel({ mcuStatus, sendMcuCommand, changeBackground, isWebSocket
                     <button
                         onMouseDown={onMouseDown}
                         onMouseUp={onMouseUp}
-                        disabled={mcuStatus == "disconnected"}
+                        onTouchStart={onMouseDown}
+                        onTouchEnd={onMouseUp}
+                        onTouchCancel={onMouseUp}
+                        disabled={mcuStatus == "disconnected" || myUser.role == "bottom"}
                         className={styles.shockButton}
                     >
                         Shock!

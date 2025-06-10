@@ -43,6 +43,13 @@
     .shockButton {
         padding: 5vh 2vh;
         font-size: 12vh;
+
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
     }
     .shockButton:disabled {
         opacity: 0.5;
@@ -88,4 +95,3 @@
     .reconnect_button_fail {
         background-color: #a00;
     }
-
