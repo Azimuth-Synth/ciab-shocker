@@ -122,7 +122,7 @@ function ControlPanel({ mcuStatus, mcuPowerLevel, sendMcuCommand, changeBackgrou
                    <p> Current power: {mcuPowerLevel} </p>
                     <input
                         type="range"
-                        min="1"
+                        min="0"
                         max="99"
                         value={mcuPowerLevel}
                         readOnly
@@ -134,7 +134,7 @@ function ControlPanel({ mcuStatus, mcuPowerLevel, sendMcuCommand, changeBackgrou
                    <p> Adjust power to: {adjustingSliderPower} </p>
                    <input
                         type="range"
-                        min="1"
+                        min="0"
                         max="99"
                         value={adjustingSliderPower}
                         onChange={handleUserSliderChange}

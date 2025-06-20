@@ -21,7 +21,7 @@ const cors = require('cors');
 // Arduino
     let serialPort = null;
     let currentMcuStatus = 'disconnected'; // 'disconnected', 'idle', 'busy', 'running'
-    let currentMcuPowerLevel = 1; // range from 1 to 99
+    let currentMcuPowerLevel = 0; // range from 0 to 99
 
     // Track user commands by IP
     const userCommands = {
@@ -136,11 +136,12 @@ const cors = require('cors');
                             currentMcuStatus = 'busy';
                             wsBroadcastMcuStatus();
                             console.log('MCU is BUSY');
-                        } else if (message.startsWith('P')) {
-                            const powerLevel = parseInt(message.slice(1), 10);
-                            if (!isNaN(powerLevel) && powerLevel >= 1 && powerLevel <= 99) {
+                        } else if (message.startsWith('P') && message.endsWith('!')) {
+                            const powerLevelStr = message.slice(1, -1); // Remove 'P' and '!'
+                            const powerLevel = parseInt(powerLevelStr, 10);
+                            if (!isNaN(powerLevel) && powerLevel >= 0 && powerLevel <= 99) {
                                 currentMcuPowerLevel = powerLevel;
-                                console.log(`MCU power level set to ${currentMcuPowerLevel}`);
+                                // console.log(`MCU power level set to ${currentMcuPowerLevel}`);
                                 wsBroadcastMcuStatus();
                             } else {
                                 console.error(`Invalid power level received: ${message}`);
@@ -252,6 +253,226 @@ const cors = require('cors');
             return res.status(404).json({ message: 'User not found' });
         }
     });
+
+    app.get('/random-shock/status', (req, res) => {
+        res.json({
+            active: randomShockingActive,
+            settings: randomShockSettings,
+            mcu_connected: serialPort && serialPort.isOpen,
+            next_shock_scheduled: randomShockTimeout !== null
+        });
+    });
+
+    app.post('/random-shock/settings', (req, res) => {
+        const clientIP = getClientIP(req);
+        const user = getOrCreateUser(clientIP);
+
+        // Check permissions (only master can change settings)
+        if (user.role !== 'master') {
+            return res.status(403).json({ message: 'Permission denied: only masters can change random shock settings' });
+        }
+
+        const { enabled, gapRange, durationRange, powerRange } = req.body;
+
+        // Handle enabled/disabled toggle
+        if (enabled !== undefined) {
+            const wasEnabled = randomShockSettings.enabled;
+            
+            if (enabled && !wasEnabled) {
+                // Starting random shocking
+                const success = startRandomShocking();
+                if (!success) {
+                    return res.status(400).json({ message: 'Cannot enable random shocking: MCU not connected' });
+                }
+                console.log(`Random shocking ENABLED by ${user.nickname}`);
+            } else if (!enabled && wasEnabled) {
+                // Stopping random shocking
+                stopRandomShocking();
+                console.log(`Random shocking DISABLED by ${user.nickname}`);
+            }
+        }
+
+        // Validate and update other settings
+        if (gapRange && gapRange.min && gapRange.max) {
+            if (gapRange.min >= 1000 && gapRange.max >= gapRange.min && gapRange.max <= 300000) {
+                randomShockSettings.gapRange = gapRange;
+            } else {
+                return res.status(400).json({ message: 'Invalid gap range. Min must be >= 1000ms, max <= 300000ms' });
+            }
+        }
+
+        if (durationRange && durationRange.min && durationRange.max) {
+            if (durationRange.min >= 100 && durationRange.max >= durationRange.min && durationRange.max <= 30000) {
+                randomShockSettings.durationRange = durationRange;
+            } else {
+                return res.status(400).json({ message: 'Invalid duration range. Min must be >= 100ms, max <= 30000ms' });
+            }
+        }
+
+        if (powerRange && powerRange.min !== undefined && powerRange.max !== undefined) {
+            if (powerRange.min >= 0 && powerRange.max <= 99 && powerRange.max >= powerRange.min) {
+                randomShockSettings.powerRange = powerRange;
+            } else {
+                return res.status(400).json({ message: 'Invalid power range. Must be 0-99' });
+            }
+        }
+
+        console.log(`Random shock settings updated by ${user.nickname}:`, randomShockSettings);
+        res.json({ 
+            message: 'Settings updated successfully',
+            settings: randomShockSettings,
+            active: randomShockingActive,
+            next_shock_scheduled: randomShockTimeout !== null
+        });
+    });
+
+// # Enable random shocking
+// curl -X POST http://localhost:3000/random-shock/settings \
+//   -H "Content-Type: application/json" \
+//   -d '{"enabled": true}'
+
+// # Disable random shocking
+// curl -X POST http://localhost:3000/random-shock/settings \
+//   -H "Content-Type: application/json" \
+//   -d '{"enabled": false}'
+
+// # Update settings and enable at the same time
+// curl -X POST http://localhost:3000/random-shock/settings \
+//   -H "Content-Type: application/json" \
+//   -d '{"enabled": true, "gapRange":{"min":3000,"max":10000}, "powerRange":{"min":20,"max":60}}'
+
+// # Check status (includes next_shock_scheduled for debugging)
+// curl http://localhost:3000/random-shock/status
+
+// Random shoking system
+    let randomShockingActive = false;
+    let randomShockTimeout = null;
+
+    // Random shocking settings (configurable ranges)
+    const randomShockSettings = {
+        enabled: false,                           // Add enabled/disabled flag
+        gapRange: { min: 5000, max: 15000 },      // Gap between shocks (5-15 seconds)
+        durationRange: { min: 1000, max: 5000 }, // Shock duration (1-5 seconds)
+        powerRange: { min: 10, max: 80 }         // Power level (10-80)
+    };
+
+    // Function to get random value within range
+    function getRandomInRange(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // Function to execute a random shock
+    async function executeRandomShock() {
+        // Check if random shocking is still active and enabled
+        if (!randomShockingActive || !randomShockSettings.enabled || !serialPort || !serialPort.isOpen) {
+            console.log('Random shock cancelled - system inactive or MCU disconnected');
+            return;
+        }
+
+        const power = getRandomInRange(randomShockSettings.powerRange.min, randomShockSettings.powerRange.max);
+        const duration = getRandomInRange(randomShockSettings.durationRange.min, randomShockSettings.durationRange.max);
+        const timestamp = new Date().toLocaleString();
+
+        console.log(`- Random shock scheduled: ${timestamp} - Power: ${power} - Duration: ${duration}ms`);
+
+        try {
+            // Set power level
+            const powerCommand = `P${power}!`;
+            serialPort.write(powerCommand);
+            
+            // Wait a moment for power to be set
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            
+            // Start shock
+            serialPort.write('1');
+            console.log(`- Random shock started: Power ${power} for ${duration}ms`);
+            
+            // Stop shock after duration
+            setTimeout(() => {
+                if (serialPort && serialPort.isOpen) {
+                    serialPort.write('0');
+                    console.log(`-  Random shock ended after ${duration}ms`);
+                }
+            }, duration);
+            
+            // Schedule next shock only if still active and enabled
+            if (randomShockingActive && randomShockSettings.enabled) {
+                scheduleNextRandomShock();
+            }
+            
+        } catch (error) {
+            console.error('Error executing random shock:', error);
+            // Still schedule next shock even if this one failed, but only if still active
+            if (randomShockingActive && randomShockSettings.enabled) {
+                scheduleNextRandomShock();
+            }
+        }
+    }
+
+    // Function to schedule the next random shock
+    function scheduleNextRandomShock() {
+        // Clear any existing timeout first
+        if (randomShockTimeout) {
+            clearTimeout(randomShockTimeout);
+            randomShockTimeout = null;
+        }
+
+        if (!randomShockingActive || !randomShockSettings.enabled) {
+            console.log('-  Next shock not scheduled - random shocking disabled');
+            return;
+        }
+
+        const gap = getRandomInRange(randomShockSettings.gapRange.min, randomShockSettings.gapRange.max);
+        const nextShockTime = new Date(Date.now() + gap).toLocaleString();
+        
+        console.log(`- Next random shock scheduled in ${gap/1000}s at ${nextShockTime}`);
+        
+        randomShockTimeout = setTimeout(() => {
+            executeRandomShock();
+        }, gap);
+    }
+
+    // Function to start random shocking
+    function startRandomShocking() {
+        if (!serialPort || !serialPort.isOpen) {
+            console.error('Cannot start random shocking: MCU not connected');
+            return false;
+        }
+
+        // Clear any existing timeouts to prevent duplicate scheduling
+        if (randomShockTimeout) {
+            clearTimeout(randomShockTimeout);
+            randomShockTimeout = null;
+        }
+
+        randomShockingActive = true;
+        randomShockSettings.enabled = true;
+        console.log('- Random shocking mode STARTED');
+        scheduleNextRandomShock();
+        return true;
+    }
+
+    // Function to stop random shocking
+    function stopRandomShocking() {
+        randomShockingActive = false;
+        randomShockSettings.enabled = false;
+        
+        // Clear any pending timeouts
+        if (randomShockTimeout) {
+            clearTimeout(randomShockTimeout);
+            randomShockTimeout = null;
+            console.log('- Cancelled pending random shock');
+        }
+        
+        // Emergency stop - send stop command to MCU
+        if (serialPort && serialPort.isOpen) {
+            serialPort.write('0');
+        }
+        
+        console.log('- Random shocking mode STOPPED');
+        return true;
+    }
+
 
 // User tracking
     // User registry - IP address as key
@@ -441,9 +662,9 @@ const cors = require('cors');
                             userCommands.stop.add(user.ip);
                             userCommands.start.delete(user.ip);
                             wsBroadcastMcuStatus();
-                        } else if (data.command === 'set_power' && data.set_power_to) {
+                        } else if (data.command === 'set_power' && data.hasOwnProperty('set_power_to')) {
                             const powerLevel = parseInt(data.set_power_to, 10);
-                            if (isNaN(powerLevel) || powerLevel < 1 || powerLevel > 99) {
+                            if (isNaN(powerLevel) || powerLevel < 0 || powerLevel > 99) {
                                 console.error(`Invalid power level: ${data.set_power_to}`);
                                 return;
                             }

@@ -17,7 +17,7 @@ function App() {
 
     // Websocket state
         const [mcuStatus, setMcuStatus] = useState('disconnected'); // 'disconnected', 'idle', 'running'
-        const [mcuPowerLevel, setMcuPowerLevel] = useState(1);      // Power level of the MCU
+        const [mcuPowerLevel, setMcuPowerLevel] = useState(0);      // Power level of the MCU
         const [userCommands, setUserCommands] = useState({ start: [], stop: [] }); // Track user commands
         const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
         const wsRef = useRef(null);
@@ -118,7 +118,7 @@ function App() {
                         const data = JSON.parse(event.data);
                         if (data.type === 'status') {
                             setMcuStatus(data.mcu_status);
-                            setMcuPowerLevel(data.mcu_power_level || 1);
+                            setMcuPowerLevel(data.mcu_power_level || 0);
 
                             if (data.user_commands) {
                                 setUserCommands(data.user_commands);
