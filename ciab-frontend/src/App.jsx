@@ -17,6 +17,7 @@ function App() {
 
     // Websocket state
         const [mcuStatus, setMcuStatus] = useState('disconnected'); // 'disconnected', 'idle', 'running'
+        const [mcuPowerLevel, setMcuPowerLevel] = useState(1);      // Power level of the MCU
         const [userCommands, setUserCommands] = useState({ start: [], stop: [] }); // Track user commands
         const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
         const wsRef = useRef(null);
@@ -117,6 +118,8 @@ function App() {
                         const data = JSON.parse(event.data);
                         if (data.type === 'status') {
                             setMcuStatus(data.mcu_status);
+                            setMcuPowerLevel(data.mcu_power_level || 1);
+
                             if (data.user_commands) {
                                 setUserCommands(data.user_commands);
                             }
@@ -159,12 +162,12 @@ function App() {
             }, []);
 
         // Arduino Control Functions
-            const sendMcuCommand = (command) => {
+            const sendMcuCommand = (command, set_pwr_to) => {
                 if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                    console.log(`Sent ${command} command to Arduino`);
                     wsRef.current.send(JSON.stringify({
                         type: 'command',
-                        command: command
+                        command: command,
+                        set_power_to: set_pwr_to
                     }));
                 } else {
                     console.log('WebSocket not connected');
@@ -190,7 +193,7 @@ function App() {
                     </div>
 
                     <div className={styles.controlPanel}>
-                        <ControlPanel mcuStatus={mcuStatus} sendMcuCommand={sendMcuCommand} changeBackground={changeBackground} isWebSocketConnected={isWebSocketConnected} myUser={myUser}/>
+                        <ControlPanel mcuStatus={mcuStatus} mcuPowerLevel={mcuPowerLevel} sendMcuCommand={sendMcuCommand} changeBackground={changeBackground} isWebSocketConnected={isWebSocketConnected} myUser={myUser}/>
                     </div>
 
                     <div className={styles.usersPanel}>

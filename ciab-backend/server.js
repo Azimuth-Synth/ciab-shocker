@@ -20,8 +20,9 @@ const cors = require('cors');
 
 // Arduino
     let serialPort = null;
-    let currentMcuStatus = 'disconnected'; // 'disconnected', 'idle', 'running'
-    
+    let currentMcuStatus = 'disconnected'; // 'disconnected', 'idle', 'busy', 'running'
+    let currentMcuPowerLevel = 1; // range from 1 to 99
+
     // Track user commands by IP
     const userCommands = {
         start: new Set(), // User IPs who have set start
@@ -117,17 +118,35 @@ const cors = require('cors');
                 });
 
                 serialPort.on('data', (data) => {
-                    const message = data.toString().trim();
+                    // Handle multiple messages in one chunk (split by newline)
+                    const messages = data.toString().split('\n');
+                    messages.forEach((rawMsg) => {
+                        const message = rawMsg.trim();
+                        if (!message) return;
 
-                    if (message === 'A') {
-                        currentMcuStatus = 'running';
-                        wsBroadcastMcuStatus();
-                        console.log('Sending RUNNING status');
-                    } else if (message === 'B') {
-                        currentMcuStatus = 'idle';
-                        wsBroadcastMcuStatus();
-                        console.log('Sending IDLE status');
-                    }
+                        if (message === 'A') {
+                            currentMcuStatus = 'running';
+                            wsBroadcastMcuStatus();
+                            console.log('MCU is RUNNING');
+                        } else if (message === 'B') {
+                            currentMcuStatus = 'idle';
+                            wsBroadcastMcuStatus();
+                            console.log('MCU is IDLE');
+                        } else if (message === 'C') {
+                            currentMcuStatus = 'busy';
+                            wsBroadcastMcuStatus();
+                            console.log('MCU is BUSY');
+                        } else if (message.startsWith('P')) {
+                            const powerLevel = parseInt(message.slice(1), 10);
+                            if (!isNaN(powerLevel) && powerLevel >= 1 && powerLevel <= 99) {
+                                currentMcuPowerLevel = powerLevel;
+                                console.log(`MCU power level set to ${currentMcuPowerLevel}`);
+                                wsBroadcastMcuStatus();
+                            } else {
+                                console.error(`Invalid power level received: ${message}`);
+                            }
+                        }
+                    });
                 });
 
                 serialPort.on('error', (err) => {
@@ -422,27 +441,27 @@ const cors = require('cors');
                             userCommands.stop.add(user.ip);
                             userCommands.start.delete(user.ip);
                             wsBroadcastMcuStatus();
+                        } else if (data.command === 'set_power' && data.set_power_to) {
+                            const powerLevel = parseInt(data.set_power_to, 10);
+                            if (isNaN(powerLevel) || powerLevel < 1 || powerLevel > 99) {
+                                console.error(`Invalid power level: ${data.set_power_to}`);
+                                return;
+                            }
+
+                            if (serialPort && serialPort.isOpen) {
+                                const mcuCommandString = `P${powerLevel}!`;
+                                serialPort.write(mcuCommandString);
+                                console.log(`Power level set to ${currentMcuPowerLevel} by ${user.nickname} (${user.role})`);
+                                wsBroadcastMcuStatus();
+                            } else {
+                                console.error('Cannot set power: serialPort is not open or not connected.');
+                                ws.send(JSON.stringify({
+                                    type: 'error',
+                                    message: 'MCU is not connected.'
+                                }));
+                            }
                         }
 
-                        // if (data.command === 'start') {
-                        //     console.log(`START command from ${user.nickname} (${user.role})`);
-                        //     currentMcuStatus = 'running';
-                        //     wsBroadcastMcuStatus();
-
-                        //     // Track user command by IP
-                        //     userCommands.start.add(user.ip);
-                        //     userCommands.stop.delete(user.ip);
-                        //     wsBroadcastMcuStatus();
-                        // } else if (data.command === 'stop') {
-                        //     console.log(`STOP command from ${user.nickname} (${user.role})`);
-                        //     currentMcuStatus = 'idle';
-                        //     wsBroadcastMcuStatus();
-
-                        //     // Track user command by IP
-                        //     userCommands.stop.add(user.ip);
-                        //     userCommands.start.delete(user.ip);
-                        //     wsBroadcastMcuStatus();
-                        // }
                     } else if (data.type === 'ping') {
                         ws.send(JSON.stringify({ type: 'pong' }));
                     }
@@ -460,7 +479,7 @@ const cors = require('cors');
                 // Mark user as disconnected if no more connections
                 if (user.connections.size === 0) {
                     user.connected = false;
-                    
+
                     // Remove user from command tracking when they disconnect
                     userCommands.start.delete(user.ip);
                     userCommands.stop.delete(user.ip);
@@ -484,6 +503,7 @@ const cors = require('cors');
         const statusMessage = JSON.stringify({
             type: 'status',
             mcu_status: currentMcuStatus,
+            mcu_power_level: currentMcuPowerLevel,
             user_commands: {
                 start: Array.from(userCommands.start),
                 stop: Array.from(userCommands.stop)
