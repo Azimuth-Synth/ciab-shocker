@@ -6,6 +6,7 @@ import styles from "./App.module.css"
 import ControlPanel from './components/ControlPanel'
 import UsersPanel from './components/UsersPanel'
 import Modal from './components/Modal'
+import AutoPanel from './components/AutoPanel'
 
 function App() {
     // State
@@ -198,6 +199,10 @@ function App() {
 
                     <div className={styles.usersPanel}>
                         <UsersPanel users={users} myUser={myUser} setIsModalOpen={setIsModalOpen} userCommands={userCommands}/>
+                    </div>
+
+                    <div className={styles.autoPanel}>
+                        <AutoPanel mcuStatus={mcuStatus} mcuPowerLevel={mcuPowerLevel} sendMcuCommand={sendMcuCommand} changeBackground={changeBackground} isWebSocketConnected={isWebSocketConnected} myUser={myUser}/>
                     </div>
                 </div>
         </>

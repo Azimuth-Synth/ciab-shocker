@@ -86,7 +86,22 @@
         }
 
     // Processing power adjustment
+        // This fucntion decides weather to call the first time or calibrated version of the function
+        void setPowerLevelFirstTime(int set_to);
+        void setPowerLevelCalibrated(int set_to);
         void setPowerLevel(int set_to){
+            static bool is_calibrated = false;
+
+            if(is_calibrated == false){
+                setPowerLevelFirstTime(set_to);
+                is_calibrated = true;
+            }else{
+                setPowerLevelCalibrated(set_to);
+            }
+        }
+
+        // This calibrates the power variable to the real one
+        void setPowerLevelFirstTime(int set_to){
             // Ensure the shocker is stopped before changing power level
                 pressShockStop();
                 reportStateBusy();
@@ -133,6 +148,66 @@
                         }
                 }
 
+
+            // Report the new power level and reset state
+                reportPowerLevel();
+                reportStateIdle();
+        }
+
+        // This function assumes the power level is already calibrated
+        void setPowerLevelCalibrated(int set_to){
+            // Ensure the shocker is stopped before changing power level
+                pressShockStop();
+                reportStateBusy();
+
+            // Validate and set the power level
+                if (set_to < 0 || set_to > 99) {
+                    Serial.print("Invalid power level.\n");
+                    reportStateIdle();
+                    return;
+                }
+
+            // Determine target range
+            // Low range goes from 0 to 49
+            // High range goes from 50 to 99
+                bool target_range_high = (set_to >= 50);  // Fixed: 50 should be in high range
+                bool current_range_high = (currentPowerLevel >= 50);
+
+            // Switch ranges if needed
+                if(target_range_high != current_range_high){
+                    if(target_range_high){
+                        // Switching from low to high range
+                        selectRangeHigh();
+                        // Convert currentPowerLevel to high range equivalent
+                        // In low range: 0-49, in high range: 50-99
+                        // So low range position X maps to high range position X+50
+                        currentPowerLevel = currentPowerLevel + 50;
+                    } else {
+                        // Switching from high to low range  
+                        selectRangeLow();
+                        // Convert currentPowerLevel to low range equivalent
+                        // High range position X maps to low range position X-50
+                        currentPowerLevel = currentPowerLevel - 50;
+                    }
+                } else {
+                    // Same range, just select it to ensure we're in the right state
+                    if(target_range_high){
+                        selectRangeHigh();
+                    } else {
+                        selectRangeLow();
+                    }
+                }
+
+            // Set the power level
+                if(currentPowerLevel < set_to){
+                    while(currentPowerLevel < set_to){
+                        pressPowerInc();
+                    }
+                }else{
+                    while(currentPowerLevel > set_to){
+                        pressPowerDec();
+                    }
+                }
 
             // Report the new power level and reset state
                 reportPowerLevel();
