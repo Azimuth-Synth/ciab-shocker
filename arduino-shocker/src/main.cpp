@@ -12,6 +12,12 @@
     #define PIN_DECREASE_POWER 10 // Pin number for the decrease power button
     #define PIN_RANGE_LOW 11       // Pin number for the low range selector
     #define PIN_RANGE_HIGH 12      // Pin number for the high range selector
+    #define PIN_LED 13            // Pin number for the built-in LED
+    #define PIN_SHOCKER 8         // Pin number for the shocker
+    #define PIN_INCREASE_POWER 9  // Pin number for the increase power button
+    #define PIN_DECREASE_POWER 10 // Pin number for the decrease power button
+    #define PIN_RANGE_LOW 11       // Pin number for the low range selector
+    #define PIN_RANGE_HIGH 12      // Pin number for the high range selector
 
 
 // State
@@ -241,9 +247,11 @@
             switch(pis){
                 case '1':
                     pressShockStart();
+                    pressShockStart();
                     break;
 
                 case '0':
+                    pressShockStop();
                     pressShockStop();
                     break;
 
