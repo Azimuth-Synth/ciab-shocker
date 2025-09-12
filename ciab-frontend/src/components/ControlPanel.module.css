@@ -39,6 +39,12 @@
     }
 
 
+/* Developed by */
+    .developedBy {
+        margin-bottom: 1vh !important;
+    }
+
+
 /* Buttons */
     .shockButton {
         padding: 5vh 2vh;

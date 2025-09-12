@@ -21,7 +21,7 @@ const cors = require('cors');
 // Arduino
     let serialPort = null;
     let currentMcuStatus = 'disconnected'; // 'disconnected', 'idle', 'busy', 'running'
-    let currentMcuPowerLevel = 1; // range from 1 to 99
+    let currentMcuPowerLevel = 0; // range from 0 to 99
 
     // Track user commands by IP
     const userCommands = {
@@ -136,11 +136,12 @@ const cors = require('cors');
                             currentMcuStatus = 'busy';
                             wsBroadcastMcuStatus();
                             console.log('MCU is BUSY');
-                        } else if (message.startsWith('P')) {
-                            const powerLevel = parseInt(message.slice(1), 10);
-                            if (!isNaN(powerLevel) && powerLevel >= 1 && powerLevel <= 99) {
+                        } else if (message.startsWith('P') && message.endsWith('!')) {
+                            const powerLevelStr = message.slice(1, -1); // Remove 'P' and '!'
+                            const powerLevel = parseInt(powerLevelStr, 10);
+                            if (!isNaN(powerLevel) && powerLevel >= 0 && powerLevel <= 99) {
                                 currentMcuPowerLevel = powerLevel;
-                                console.log(`MCU power level set to ${currentMcuPowerLevel}`);
+                                // console.log(`MCU power level set to ${currentMcuPowerLevel}`);
                                 wsBroadcastMcuStatus();
                             } else {
                                 console.error(`Invalid power level received: ${message}`);
@@ -441,9 +442,9 @@ const cors = require('cors');
                             userCommands.stop.add(user.ip);
                             userCommands.start.delete(user.ip);
                             wsBroadcastMcuStatus();
-                        } else if (data.command === 'set_power' && data.set_power_to) {
+                        } else if (data.command === 'set_power' && data.hasOwnProperty('set_power_to')) {
                             const powerLevel = parseInt(data.set_power_to, 10);
-                            if (isNaN(powerLevel) || powerLevel < 1 || powerLevel > 99) {
+                            if (isNaN(powerLevel) || powerLevel < 0 || powerLevel > 99) {
                                 console.error(`Invalid power level: ${data.set_power_to}`);
                                 return;
                             }

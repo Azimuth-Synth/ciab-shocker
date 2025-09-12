@@ -78,6 +78,10 @@ function ControlPanel({ mcuStatus, mcuPowerLevel, sendMcuCommand, changeBackgrou
     return (
         <div className={styles.container}>
             <div className={`${styles.card} ${mcuStatus == 'running' ? styles.cardActive : ''}`}>
+                {/* Developed by Lime Dev */}
+                    <p className={styles.developedBy}> Developed by Lime Dev </p>
+
+
                 {/* Change bc button */}
                     <button onClick={changeBackground} className={styles.backgroundChangeButton}> Change background </button>
 
@@ -122,7 +126,7 @@ function ControlPanel({ mcuStatus, mcuPowerLevel, sendMcuCommand, changeBackgrou
                    <p> Current power: {mcuPowerLevel} </p>
                     <input
                         type="range"
-                        min="1"
+                        min="0"
                         max="99"
                         value={mcuPowerLevel}
                         readOnly
@@ -134,7 +138,7 @@ function ControlPanel({ mcuStatus, mcuPowerLevel, sendMcuCommand, changeBackgrou
                    <p> Adjust power to: {adjustingSliderPower} </p>
                    <input
                         type="range"
-                        min="1"
+                        min="0"
                         max="99"
                         value={adjustingSliderPower}
                         onChange={handleUserSliderChange}
