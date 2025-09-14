@@ -35,46 +35,24 @@
     .card p {
         margin: 0;
         text-align: center;
+    }
+
+
+/* Auto Shocking Indicator */
+    .autoShockingIndicator {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: center;
+        align-items: center;
+
+        gap: 1vh;
+        width: 100%;
+    }
+    .autoShockingIndicator span {
         font-size: 2.1vh;
     }
 
-
-/* Developed by */
-    .developedBy {
-        margin-bottom: 1vh !important;
-    }
-
-
-/* Buttons */
-    .shockButton {
-        padding: 5vh 2vh;
-        font-size: 12vh;
-
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-        -webkit-touch-callout: none;
-        -webkit-tap-highlight-color: transparent;
-    }
-    .shockButton:disabled {
-        opacity: 0.5;
-        cursor: not-allowed !important;
-        background-color: #666 !important;
-    }
-
-    .backgroundChangeButton {
-        padding: 1vh 2vh;
-        font-size: 2vh;
-    }
-
-
-/* Hardware status */
-    .statusTextContainer {
-        display: flex;
-        gap: 2vh;
-        align-items: center;
-    }
     .statusIndicator {
         width: 2vh;
         height: 2vh;
@@ -82,67 +60,58 @@
         box-shadow: 0 0 2vh rgba(255, 255, 255, 0.3);
         transition: all 0.3s ease;
     }
-    .statusText {
-        font-size: 2vh;
-        color: white;
-    }
 
-    .reconnect_button {
-        background-color: #1a1a1a;
-        padding: 0px 0.5vh;
-        font-size: 2vh;
-        margin: 0 0 0 0 !important;
-
-        transition: background-color 0.3s ease-in-out;
-    }
-    .reconnect_button_succ {
-        background-color: #0a0;
-    }
-    .reconnect_button_fail {
-        background-color: #a00;
-    }
-
-/* Power display and selector */
-    .powerDisplaySlider {
+/* Power range */
+    .powerRangeSelectorLabel {
         width: 100%;
+        text-align: left;
+    }
+
+    .powerRangeSelectorSlider {
+        width: 100%;
+    }
+
+    .rangeTrack {
+        position: relative;
         height: 3vh;
         background-color: #1a1a1a;
         border-radius: 1.5vh;
-        outline: none;
-        appearance: none;
-        cursor: not-allowed;
     }
 
-    .powerDisplaySlider::-webkit-slider-thumb {
-        appearance: none;
+    .interactableRange{
+        left: 1.5vh;
+        position: absolute;
+        width: calc(100% - 3vh);
+        height: 3vh;
+    }
+
+    .rangeFill {
+        position: absolute;
+        height: 100%;
+        background: #07800b;
+    }
+
+    .rangeThumb {
+        position: absolute;
+        top: 0;
         width: 3vh;
         height: 3vh;
-        border-radius: 50%;
         background: #09bc0f;
-        cursor: not-allowed;
-        border: 0.4vh solid #388E3C;
+        border-radius: 50%;
+        cursor: pointer;
+        /* border: 0.4vh solid #388E3C; */
+        transform: translateX(-50%);
     }
 
-    .powerAdjustSlider {
+/* Time selectors */
+    .timeSelector {
         width: 100%;
-        height: 3vh;
-        background-color: #1a1a1a;
-        border-radius: 1.5vh;
-        outline: none;
-        appearance: none;
-        cursor: pointer;
     }
 
-    .powerAdjustSlider::-webkit-slider-thumb {
-        appearance: none;
-        width:  3vh;
-        height: 3vh;
-        border-radius: 50%;
-        background: #09bc0f;
-        cursor: pointer;
-        border: 0.4vh solid #388E3C;
+    .timeSelector span {
+        font-size: 2.1vh;
     }
 
-    .powerAdjustSlider:hover {
-        background: #575757;
+    .timeSelector input {
+        font-size: 2.1vh;
     }

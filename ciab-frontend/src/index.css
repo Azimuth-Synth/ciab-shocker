@@ -23,11 +23,19 @@
 
 /* Text */
     h1 {
-        font-size: 3.2em;
+        font-size: 4.1vh;
+        line-height: 1.1;
+    }
+    h2 {
+        margin: 0;
+        font-size: 3.1vh;
         line-height: 1.1;
     }
     p {
-        font-size: 1.2em;
+        font-size: 2.1vh;
+    }
+    label {
+        font-size: 2.1vh;
     }
 
 /* Button */
