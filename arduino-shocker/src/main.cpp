@@ -1,17 +1,11 @@
 #include <Arduino.h>
 
 // Config
-    #define POWER_ADJUST_ON_TIME_MS 37  // The time the button is held down when changing the power.
-    #define POWER_ADJUST_OFF_TIME_MS 37 // The gap between presses of the button.
+    #define POWER_ADJUST_ON_TIME_MS 40  // The time the button is held down when changing the power.
+    #define POWER_ADJUST_OFF_TIME_MS 40 // The gap between presses of the button.
 
 
 // Pins
-    #define PIN_LED 13            // Pin number for the built-in LED
-    #define PIN_SHOCKER 8         // Pin number for the shocker
-    #define PIN_INCREASE_POWER 9  // Pin number for the increase power button
-    #define PIN_DECREASE_POWER 10 // Pin number for the decrease power button
-    #define PIN_RANGE_LOW 11       // Pin number for the low range selector
-    #define PIN_RANGE_HIGH 12      // Pin number for the high range selector
     #define PIN_LED 13            // Pin number for the built-in LED
     #define PIN_SHOCKER 8         // Pin number for the shocker
     #define PIN_INCREASE_POWER 9  // Pin number for the increase power button
@@ -28,7 +22,9 @@
     };
     ShockerState currentState = ShockerState::IDLE;
 
-    int currentPowerLevel = 0; // Power level for the shocker (0-99)
+    int powerLevelLow = 50; // Power level for the shocker (0-50)
+    int powerLevelHigh = 99; // Power level for the shocker (51-99)
+    bool isHighRange = false; // Current range state
 
 
 // Functions
@@ -47,7 +43,13 @@
         }
         void reportPowerLevel(){
             Serial.print("P");
-            Serial.print(currentPowerLevel);
+
+            if(isHighRange){
+                Serial.print(powerLevelHigh);
+            } else {
+                Serial.print(powerLevelLow);
+            }
+
             Serial.print("!\n");
         }
 
@@ -68,7 +70,11 @@
             digitalWrite(PIN_INCREASE_POWER, LOW);
             delay(POWER_ADJUST_OFF_TIME_MS);
 
-            currentPowerLevel++;
+            if(isHighRange){
+                powerLevelHigh++;
+            } else {
+                powerLevelLow++;
+            }
             reportPowerLevel();
         }
         void pressPowerDec(){
@@ -77,18 +83,26 @@
             digitalWrite(PIN_DECREASE_POWER, LOW);
             delay(POWER_ADJUST_OFF_TIME_MS);
 
-            currentPowerLevel--;
+            if(isHighRange){
+                powerLevelHigh--;
+            } else {
+                powerLevelLow--;
+            }
             reportPowerLevel();
         }
         void selectRangeLow(){
             digitalWrite(PIN_RANGE_HIGH, LOW);
             delay(5);
             digitalWrite(PIN_RANGE_LOW, HIGH);
+            delay(100);
+            isHighRange = false;
         }
         void selectRangeHigh(){
             digitalWrite(PIN_RANGE_LOW, LOW);
             delay(5);
             digitalWrite(PIN_RANGE_HIGH, HIGH);
+            delay(100);
+            isHighRange = true;
         }
 
     // Processing power adjustment
@@ -96,13 +110,25 @@
         void setPowerLevelFirstTime(int set_to);
         void setPowerLevelCalibrated(int set_to);
         void setPowerLevel(int set_to){
-            static bool is_calibrated = false;
+            static bool is_low_calibrated = false;
+            static bool is_high_calibrated = false;
 
-            if(is_calibrated == false){
-                setPowerLevelFirstTime(set_to);
-                is_calibrated = true;
-            }else{
-                setPowerLevelCalibrated(set_to);
+            if(set_to <= 50){
+                // Low range
+                if(is_low_calibrated == false){
+                    setPowerLevelFirstTime(set_to);
+                    is_low_calibrated = true;
+                }else{
+                    setPowerLevelCalibrated(set_to);
+                }
+            } else {
+                // High range
+                if(is_high_calibrated == false){
+                    setPowerLevelFirstTime(set_to);
+                    is_high_calibrated = true;
+                }else{
+                    setPowerLevelCalibrated(set_to);
+                }
             }
         }
 
@@ -132,24 +158,24 @@
             // Set the power level
                 if(is_range_high){
                     // Return the power setting to a known state by going down from 99 to 51. This ensures we will allways be on power 51 when starting.
-                        currentPowerLevel = 99;
-                        while(currentPowerLevel > 51){
+                        powerLevelHigh = 99;
+                        while(powerLevelHigh > 51){
                             pressPowerDec();
                         }
 
                     // Increase untill the desired value is reached
-                        while(currentPowerLevel < set_to){
+                        while(powerLevelHigh < set_to){
                             pressPowerInc();
                         }
                 }else{
-                    // Return the power setting to a known state by going down from 50 to 0. This ensures we will allways be on power 1 when starting.
-                        currentPowerLevel = 50;
-                        while(currentPowerLevel > 0){
+                    // Return the power setting to a known state by going down from 50 to 0. This ensures we will allways be on power 0 when starting.
+                        powerLevelLow = 50;
+                        while(powerLevelLow > 0){
                             pressPowerDec();
                         }
 
                     // Increase untill the desired value is reached
-                        while(currentPowerLevel < set_to){
+                        while(powerLevelLow < set_to){
                             pressPowerInc();
                         }
                 }
@@ -174,44 +200,57 @@
                 }
 
             // Determine target range
-            // Low range goes from 0 to 49
-            // High range goes from 50 to 99
-                bool target_range_high = (set_to >= 50);  // Fixed: 50 should be in high range
-                bool current_range_high = (currentPowerLevel >= 50);
+            // Low range goes from 0 to 50
+            // High range goes from 51 to 99
+                bool target_range_high = (set_to > 50);
+                bool switching_ranges = (target_range_high != isHighRange);
 
-            // Switch ranges if needed
-                if(target_range_high != current_range_high){
-                    if(target_range_high){
-                        // Switching from low to high range
-                        selectRangeHigh();
-                        // Convert currentPowerLevel to high range equivalent
-                        // In low range: 0-49, in high range: 50-99
-                        // So low range position X maps to high range position X+50
-                        currentPowerLevel = currentPowerLevel + 50;
-                    } else {
-                        // Switching from high to low range  
-                        selectRangeLow();
-                        // Convert currentPowerLevel to low range equivalent
-                        // High range position X maps to low range position X-50
-                        currentPowerLevel = currentPowerLevel - 50;
+                if(target_range_high){
+                    // Switching to high range
+                    selectRangeHigh();
+                    
+                    // If we just switched ranges, recalibrate from known state
+                    if(switching_ranges){
+                        // Reset to known state (51) in high range
+                        powerLevelHigh = 99;
+                        while(powerLevelHigh > 51){
+                            pressPowerDec();
+                        }
                     }
                 } else {
-                    // Same range, just select it to ensure we're in the right state
-                    if(target_range_high){
-                        selectRangeHigh();
-                    } else {
-                        selectRangeLow();
+                    // Switching to low range
+                    selectRangeLow();
+                    
+                    // If we just switched ranges, recalibrate from known state
+                    if(switching_ranges){
+                        // Reset to known state (0) in low range
+                        powerLevelLow = 50;
+                        while(powerLevelLow > 0){
+                            pressPowerDec();
+                        }
                     }
                 }
 
             // Set the power level
-                if(currentPowerLevel < set_to){
-                    while(currentPowerLevel < set_to){
-                        pressPowerInc();
+                if(isHighRange){
+                    if(powerLevelHigh < set_to){
+                        while(powerLevelHigh < set_to){
+                            pressPowerInc();
+                        }
+                    }else{
+                        while(powerLevelHigh > set_to){
+                            pressPowerDec();
+                        }
                     }
                 }else{
-                    while(currentPowerLevel > set_to){
-                        pressPowerDec();
+                    if(powerLevelLow < set_to){
+                        while(powerLevelLow < set_to){
+                            pressPowerInc();
+                        }
+                    }else{
+                        while(powerLevelLow > set_to){
+                            pressPowerDec();
+                        }
                     }
                 }
 
