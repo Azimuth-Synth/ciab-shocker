@@ -1,10 +1,25 @@
 import styles from './ControlPanel.module.css';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function ControlPanel({ mcuStatus, mcuPowerLevel, sendMcuCommand, changeBackground, isWebSocketConnected, myUser }) {
     const [reconnectStatus, setReconnectStatus] = useState(''); // '', 'success', 'error'
     const [adjustingSliderPower, setAdjustingSliderPower] = useState(mcuPowerLevel);
+
+
+    // Calibrate function
+        const sendCalibrate = () => {
+            sendMcuCommand('calibrate');
+            console.log('Calibrate command sent');
+        };
+
+        // Expose calibrate function globally for console access
+        useEffect(() => {
+            window.sendCalibrate = sendCalibrate;
+            return () => {
+                delete window.sendCalibrate;
+            };
+        }, []);
 
 
     // Shock button

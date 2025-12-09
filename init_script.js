@@ -35,9 +35,14 @@ function updateFrontendEnv(websocketUrl) {
 // Function to start React dev server
 function startReactServer() {
     console.log('- Starting React server...');
-    reactProcess = spawn('npm', ['run', 'dev'], {
+    
+    // Use npm.cmd on Windows
+    const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    
+    reactProcess = spawn(npmCmd, ['run', 'dev'], {
         cwd: path.resolve(FRONTEND_DIR),
         stdio: 'ignore',
+        shell: true  // This also helps on Windows
     });
 
     reactProcess.on('close', (code) => {

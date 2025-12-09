@@ -5,11 +5,37 @@ const { SerialPort } = require('serialport');
 const { WebSocketServer } = require('ws');
 const http = require('http');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 
 // Configuration
     const PORT = 3000;
     const commonPatterns = ['/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyUSB0', '/dev/ttyUSB1'];
+
+    // Function to read device port from config.txt
+    function getConfiguredDevice() {
+        try {
+            const configPath = path.join(__dirname, '..', 'config.txt');
+            const configContent = fs.readFileSync(configPath, 'utf-8');
+            const lines = configContent.split('\n');
+            
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith('device')) {
+                    const parts = trimmedLine.split('=');
+                    if (parts.length === 2) {
+                        const device = parts[1].trim();
+                        console.log(`Found configured device in config.txt: ${device}`);
+                        return device;
+                    }
+                }
+            }
+        } catch (error) {
+            console.log(`Could not read config.txt: ${error.message}`);
+        }
+        return null;
+    }
 
 
 // Middleware setup
@@ -84,8 +110,13 @@ const cors = require('cors');
             return;
         }
 
-        // Try common Arduino port patterns first
-        const portsToTry = [...commonPatterns];
+        // Try configured device first, then common Arduino port patterns
+        const portsToTry = [];
+        const configuredDevice = getConfiguredDevice();
+        if (configuredDevice) {
+            portsToTry.push(configuredDevice);
+        }
+        portsToTry.push(...commonPatterns);
 
         // Add any other available USB/ACM ports that aren't already in the list
         availableUsbAcmPorts.forEach(port => {
@@ -681,6 +712,9 @@ const cors = require('cors');
                                     message: 'MCU is not connected.'
                                 }));
                             }
+                        } else if (data.command === 'calibrate' && serialPort && serialPort.isOpen) {
+                            serialPort.write('C');
+                            console.log(`CALIBRATE command from ${user.nickname} (${user.role})`);
                         }
 
                     } else if (data.type === 'ping') {
